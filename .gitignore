@@ -1,0 +1,22 @@
+# 依赖
+node_modules/
+
+# 部署产物
+.edgeone/
+.dist/
+dist/
+
+# 环境变量（含密钥，禁止提交）
+.env
+.env.local
+.env.*.local
+
+# 日志
+*.log
+npm-debug.log*
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,16 @@
+{
+  "name": "edgeone-origin-webhook",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EdgeOne Makers Cloud Functions：通过 Webhook 更新加速域名回源 IP 与 HTTP/HTTPS 回源端口",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "edgeone dev",
+    "deploy": "edgeone deploy"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
