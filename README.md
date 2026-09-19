@@ -132,12 +132,69 @@ curl -X POST https://<你的 EdgeOne 域名>/update-origin \
 
 ## 部署
 
+### 当前线上地址
+
+- 站点：`https://tencent-teo-sync-y4evv21v.edgeone.cool`
+- Webhook 端点：`POST https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin`
+- 控制台：https://console.cloud.tencent.com/edgeone/pages/project/makers-icufee8xbs4j
+
+### 命令行部署
+
 ```bash
 npm install -g edgeone
+edgeone login      # 首次需要授权
 edgeone deploy
 ```
 
-或在 EdgeOne Makers 控制台直接关联 Git 仓库自动构建。
+### 必要的一步：配置环境变量
+
+命令行部署不会上传 `.env`。请在 **EdgeOne Makers 控制台 → 项目 → 环境变量** 中添加：
+
+```
+EO_SECRET_ID     = 你的 SecretId
+EO_SECRET_KEY    = 你的 SecretKey
+EO_ZONE_ID       = zone-xxxxxxxx
+WEBHOOK_TOKEN    = 高强度随机串（建议设置）
+EO_ALLOWED_DOMAINS = *.example.com
+```
+
+配置完成后用下面的命令验证是否已经生效（返回 `true`）：
+
+```bash
+curl "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin?domain=www.example.com"
+```
+
+若仍返回 `{"ok":false,"error":{"code":"MissingConfig","message":"服务端未配置 EO_ZONE_ID"}`，说明环境变量未保存或未触发重新部署，需要在控制台手动"重新部署"一次。
+
+### 关联 GitHub（CI 自动部署）
+
+本项目已初始化 Git 仓库并完成首次提交。剩下的两步需要在 GitHub 与 EdgeOne 控制台完成：
+
+1. **推送到 GitHub**
+
+   在 GitHub 新建一个空仓库（不要勾选初始化 README），然后执行：
+
+   ```bash
+   git branch -M main
+   git remote add origin https://github.com/<你的账号>/<仓库名>.git
+   git push -u origin main
+   ```
+
+   推送前建议把提交作者改成你自己的身份：
+
+   ```bash
+   git -c user.name="你的名字" -c user.email="你的邮箱" commit --amend --reset-author --no-edit
+   ```
+
+   若使用 SSH：`git remote set-url origin git@github.com:<账号>/<仓库名>.git`
+
+2. **在 EdgeOne 控制台关联仓库**
+
+   打开 https://console.cloud.tencent.com/edgeone/pages → 进入项目 `tencent-teo-sync` → **项目设置 → 数据源 / Git 关联** → 选择 GitHub 并授权 → 选定刚推送的仓库与 `main` 分支。
+
+   关联后，后续 `git push` 会自动触发构建部署（云函数目录 `node-functions/` 会在构建阶段自动识别）。
+
+> `.env` 已被 `.gitignore` 忽略，密钥不会进入 GitHub；环境变量始终在 EdgeOne 控制台维护。
 
 ## 权限最小化建议
 
