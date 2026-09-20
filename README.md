@@ -214,28 +214,18 @@ curl -X POST https://<你的 EdgeOne 域名>/update-origin \
 
 ## Webhook 调用
 
-本接口就是一个普通 HTTP 接口，任何能发请求的工具都可以调用：DDNS 客户端、路由器或 NAS 的计划任务、`cron` + `curl`、CI 流水线、各类 Webhook 触发器。调用方只需填好「URL + 请求头 + 请求体」，下面以 **Lucky** 的计划任务为例，其他工具按对应关系填写即可。
+本接口就是一个普通 HTTP 接口，任何能发请求的工具都可以调用：DDNS 客户端、路由器或 NAS 的计划任务、`cron` + `curl`、CI 流水线、各类 Webhook 触发器，调用方只需填好「URL + 请求头 + 请求体」。
 
 ### 方式一：POST + JSON 请求体（推荐）
 
-以 Lucky 为例：添加计划任务 → 子任务类型选 **Callweb**，按下面填写：
+以 Lucky 为例：
 
 | 字段 | 填写内容 |
 | --- | --- |
 | 请求 URL | `https://<你的 EdgeOne 域名>/update-origin` |
 | 请求方式 | `POST` |
-| 请求头 | `Content-Type: application/json` 换行 `X-Webhook-Token: your-strong-random-token` |
-| 请求体 | `{"domain":"www.example.com","ip":"{CRON_任务名称_1}","httpPort":80,"httpsPort":443}`；站点不是默认站点时，开头补一段 `"zoneId":"zone-abcdef123456",` |
-
-上面请求体里的 `{CRON_任务名称_1}` 是 Lucky 的变量写法（单花括号），Lucky 支持这些：
-
-| 变量 | 含义 |
-| --- | --- |
-| `{CRON_任务名称_N}` | 第 N 个子任务（脚本 / Callweb）的执行结果，序号从 1 开始 |
-| `{STUN_规则名_IP}` | 引用某条 STUN 穿透规则的穿透 IP |
-| `{DNS_TXT_域名_IP}` | 从 DNS TXT 记录解析出的 IP |
-
-典型做法是**两个子任务配合**：子任务 1 用 Callweb 请求公网 IP 查询接口（如 Lucky 官网的 `66666.host`）拿到 IP，子任务 2 引用 `{CRON_任务名称_1}` 作为 `ip` 值调用本接口。
+| 请求头 | `Content-Type: application/json` 换行 `X-Webhook-Token: {your-strong-random-token}` |
+| 请求体 | `{"domain":"www.example.com","ip":"10.11.12.13","httpPort":80,"httpsPort":443}`；站点不是默认站点时，开头补一段 `"zoneId":"zone-abcdef123456",` |
 
 ### 方式二：GET（只能拼 URL 时使用）
 
