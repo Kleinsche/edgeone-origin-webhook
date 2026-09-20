@@ -319,4 +319,6 @@ curl -X POST "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin" \
 
 ## 开源许可证
 
-本项目采用 [MIT](LICENSE) 许可证，可自由使用、修改和分发。
+本项目采用 [GNU AGPL-3.0](LICENSE) 许可证。
+
+AGPL-3.0 是强 copyleft 协议：你可以自由使用、修改和分发本项目，但把修改后的版本通过网络对外提供服务时，必须向使用者提供该版本的完整源码；二次分发时也必须沿用同一许可证。
