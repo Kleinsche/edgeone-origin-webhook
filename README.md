@@ -14,11 +14,11 @@
 | 构建命令 / 输出目录 | 均留空（本项目只有云函数，无静态产物） |
 | 环境变量清单 | `EO_SECRET_ID`、`EO_SECRET_KEY`、`EO_ZONE_ID`、`WEBHOOK_TOKEN`、`EO_ALLOWED_DOMAINS` |
 
-环境变量的**取值**仍要在控制台补齐：密钥到 [CAM 控制台](https://console.cloud.tencent.com/cam/capi) 获取，`EO_ZONE_ID` 在站点概览页获取，`WEBHOOK_TOKEN` 填一个高强度随机串，`EO_ALLOWED_DOMAINS` 填允许操作的域名白名单。完整说明见下方 [环境变量](#环境变量)。
+环境变量的**取值**仍要在控制台补齐：密钥到 [CAM 控制台](https://console.cloud.tencent.com/cam/capi) 获取，`EO_ZONE_ID` 填你最常用的那个站点 ID（在站点概览页获取，它会作为**默认站点**），`WEBHOOK_TOKEN` 填一个高强度随机串，`EO_ALLOWED_DOMAINS` 填允许操作的域名白名单。完整说明见下方 [环境变量](#环境变量)。
 
 部署在 **EdgeOne Makers Cloud Functions** 上的中间脚本：对外暴露一个 HTTP 接口，接收 Webhook 请求后调用腾讯云 EdgeOne（TEO）开放 API，更新指定加速域名的**回源 IP** 与 **HTTP/HTTPS 回源端口**。
 
-密钥 SecretId / SecretKey / ZoneId 统一从环境变量读取，不落盘、不回显在响应中。
+密钥 SecretId / SecretKey 与默认 ZoneId 统一从环境变量读取，不落盘、不回显在响应中；单次调用要作用到其他站点时，由请求体 `zoneId` 临时指定。
 
 ## 目录结构
 
@@ -55,7 +55,7 @@ API 版本：`2022-09-01`，服务名：`teo`，接入点：`https://teo.tencent
 | --- | --- | --- |
 | `EO_SECRET_ID` | 是 | 腾讯云 SecretId（兼容别名 `TENCENTCLOUD_SECRET_ID`） |
 | `EO_SECRET_KEY` | 是 | 腾讯云 SecretKey（兼容别名 `TENCENTCLOUD_SECRET_KEY`） |
-| `EO_ZONE_ID` | 是 | 默认 EdgeOne 站点 ID，形如 `zone-225qgrnvbi9w`；调用方可在请求体传 `zoneId` 覆盖 |
+| `EO_ZONE_ID` | 是 | **默认站点 ID**，形如 `zone-225qgrnvbi9w`，在站点概览页获取。请求不带 `zoneId` 时作用于该站点；其他站点可用请求体 `zoneId` 临时指定 |
 | `WEBHOOK_TOKEN` | 否 | Webhook 调用令牌。**强烈建议设置**，否则任何人都能改你的回源配置 |
 | `EO_DEFAULT_ORIGIN_PROTOCOL` | 否 | 缺省回源协议 `FOLLOW` / `HTTP` / `HTTPS`，不设置则沿用域名现有配置 |
 | `EO_ALLOWED_DOMAINS` | 否 | 域名白名单，逗号分隔，支持通配子域，如 `*.example.com,assets.example.com` |
@@ -67,6 +67,29 @@ API 版本：`2022-09-01`，服务名：`teo`，接入点：`https://teo.tencent
 | `EO_ALLOW_GET_UPDATE` | 否 | 设为 `true` 时允许用 **GET** 触发更新，方便只能拼接 URL 的调用方（如 Lucky Callweb）。默认关闭 |
 | `EO_ALLOW_DESCRIBE` | 否 | 设为 `true` 时开放 GET 查询单个域名的回源配置。**默认关闭**，建议仅排障时临时开启 |
 | `EO_CORS_ORIGIN` | 否 | 允许的跨域来源，如 `https://example.com`。不设置则不返回 `Access-Control-Allow-Origin`，即不开放跨域 |
+
+### 站点怎么指定（多站点）
+
+`EO_ZONE_ID` 填的是**默认站点**：请求里不带站点参数时，操作就落在它上面。
+
+同一个密钥下有多个站点时，不必每个站点部署一份。只部署这一份，把最常用的站点填进 `EO_ZONE_ID`，其余站点在调用时用请求体的 `zoneId` 指定：
+
+| 调用时 | 实际生效的站点 |
+| --- | --- |
+| 不传 `zoneId` 或传空值 | 环境变量 `EO_ZONE_ID`（默认站点） |
+| 传站点 ID，如 `zone-abcdef123456` | 该站点，仅本次请求生效 |
+
+```json
+{
+  "zoneId": "zone-abcdef123456",
+  "domain": "www.other-site.com",
+  "ip": "1.2.3.4"
+}
+```
+
+GET 传参同样支持：`?zoneId=zone-abcdef123456&domain=www.other-site.com&ip=1.2.3.4`。
+
+> 注意放宽范围带来的风险：能传 `zoneId` 就意味着拿到 `WEBHOOK_TOKEN` 的人可以操作该密钥下**任意**站点。若只想开放固定几个站点，务必同时配置 `EO_ALLOWED_ZONE_IDS`（逗号分隔），白名单外的站点会被拒绝并返回 `403 ZoneForbidden`。
 
 本地调试：复制 `.env.example` 为 `.env`。
 
@@ -84,6 +107,7 @@ X-Webhook-Token: <WEBHOOK_TOKEN>
 
 ```json
 {
+  "zoneId": "zone-225qgrnvbi9w",
   "domain": "www.example.com",
   "ip": "1.2.3.4",
   "httpPort": 80,
@@ -103,7 +127,7 @@ X-Webhook-Token: <WEBHOOK_TOKEN>
 
 也支持 `application/x-www-form-urlencoded` 或直接在 URL query 上传参。
 
-传了 `zoneId` 就以请求值为准，未传则用 `EO_ZONE_ID`。若服务端配置了 `EO_ALLOWED_ZONE_IDS`，传入的站点必须落在白名单内，否则返回 `403 ZoneForbidden`。
+`zoneId` 可省略：省略时使用环境变量 `EO_ZONE_ID` 对应的默认站点，传了则以传入的站点为准。多站点用法见上文「环境变量 → 站点怎么指定」小节。若服务端配置了 `EO_ALLOWED_ZONE_IDS`，传入的站点必须落在白名单内，否则返回 `403 ZoneForbidden`。
 
 成功响应：
 
@@ -159,6 +183,15 @@ curl -X POST https://<你的 EdgeOne 域名>/update-origin \
   -d '{"domain":"www.example.com","ip":"1.2.3.4","httpPort":80,"httpsPort":443}'
 ```
 
+要更新**默认站点以外**的其他站点，请求体里带上 `zoneId`：
+
+```bash
+curl -X POST https://<你的 EdgeOne 域名>/update-origin \
+  -H "Content-Type: application/json" \
+  -H "X-Webhook-Token: your-strong-random-token" \
+  -d '{"zoneId":"zone-abcdef123456","domain":"www.other-site.com","ip":"1.2.3.4"}'
+```
+
 令牌也可通过 `Authorization: Bearer <token>` 或请求体 `"token": "<token>"` 传递。
 
 ## 从 Lucky 调用
@@ -174,7 +207,7 @@ Lucky 通过**计划任务 → Callweb 子任务**发起请求，变量语法是
 | 请求 URL | `https://<你的 EdgeOne 域名>/update-origin` |
 | 请求方式 | `POST` |
 | 请求头 | `Content-Type: application/json` 换行 `X-Webhook-Token: your-strong-random-token` |
-| 请求体 | `{"domain":"www.example.com","ip":"{CRON_任务名称_1}","httpPort":80,"httpsPort":443}` |
+| 请求体 | `{"domain":"www.example.com","ip":"{CRON_任务名称_1}","httpPort":80,"httpsPort":443}`；站点不是默认站点时，开头补一段 `"zoneId":"zone-abcdef123456",` |
 
 请求体中的 IP 用 Lucky 变量替换，可用写法：
 
@@ -221,9 +254,10 @@ edgeone deploy
 ```
 EO_SECRET_ID     = 你的 SecretId
 EO_SECRET_KEY    = 你的 SecretKey
-EO_ZONE_ID       = zone-xxxxxxxx
+EO_ZONE_ID       = zone-xxxxxxxx            # 默认站点 ID，必填
 WEBHOOK_TOKEN    = 高强度随机串（建议设置）
 EO_ALLOWED_DOMAINS = *.example.com
+EO_ALLOWED_ZONE_IDS = zone-xxxxxxxx         # 可选：需要用 zoneId 切到其他站点时，建议用它限制可切换的范围
 ```
 
 配置完成后用下面的命令验证是否已经生效（返回 `ok: true`）：
@@ -237,7 +271,7 @@ curl -X POST "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin" \
 
 `dryRun` 只返回变更预览，不会真正下发。若想用 GET 排障，需额外设置 `EO_ALLOW_DESCRIBE=true`。
 
-若仍返回 `{"ok":false,"error":{"code":"MissingConfig","message":"服务端未配置 EO_ZONE_ID"}`，说明环境变量未保存或未触发重新部署，需要在控制台手动"重新部署"一次。
+若仍返回 `MissingConfig`（消息为「缺少 ZoneId：请在请求体传入 zoneId，或在服务端配置 EO_ZONE_ID」），说明环境变量未保存或未触发重新部署，需要在控制台手动"重新部署"一次。
 
 ### 关联 GitHub（CI 自动部署）
 
