@@ -25,7 +25,7 @@
  *   EO_API_TIMEOUT_MS            可选，接口超时，默认 15000
  */
 
-import { TeoClient, TeoApiError } from '../lib/teo-client.js';
+import { TeoClient, TeoApiError } from './lib/teo-client.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',

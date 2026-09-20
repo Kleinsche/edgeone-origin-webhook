@@ -9,15 +9,16 @@
 ```
 .
 ├── edgeone.json                    # EdgeOne Pages/Makers 项目配置（部署地域）
-├── lib
-│   └── teo-client.js               # TEO OpenAPI 客户端：TC3-HMAC-SHA256 签名 + 接口封装
-├── node-functions
-│   └── update-origin.js            # Webhook 入口，路由 /update-origin
+├── cloud-functions                 # Cloud Functions 根目录（固定名称，不可改）
+│   ├── update-origin.js            # Webhook 入口，路由 /update-origin
+│   └── lib
+│       └── teo-client.js           # 辅助模块：TC3-HMAC-SHA256 签名 + 接口封装（不注册路由）
 ├── .env.example                    # 环境变量样例
 └── package.json
 ```
 
-`node-functions/*.js` 会被自动映射为路由，`update-origin.js` 对应端点 `/update-origin`。
+`cloud-functions/` 下的文件按路径自动映射为路由，`update-origin.js` 对应端点 `/update-origin`。
+只有导出了 `onRequest` 等 Handler 的文件才会注册为路由；`lib/` 下的文件未导出 Handler，仅作为辅助模块打进构建产物。
 
 ## 涉及的 EdgeOne API
 
@@ -188,11 +189,38 @@ curl "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin?domain=www.ex
 
    若使用 SSH：`git remote set-url origin git@github.com:<账号>/<仓库名>.git`
 
-2. **在 EdgeOne 控制台关联仓库**
+2. **在 EdgeOne Makers 控制台导入仓库**
 
-   打开 https://console.cloud.tencent.com/edgeone/pages → 进入项目 `tencent-teo-sync` → **项目设置 → 数据源 / Git 关联** → 选择 GitHub 并授权 → 选定刚推送的仓库与 `main` 分支。
+   打开 <https://console.cloud.tencent.com/edgeone/pages>，首次使用点击**立即开通**。
 
-   关联后，后续 `git push` 会自动触发构建部署（云函数目录 `node-functions/` 会在构建阶段自动识别）。
+   - 点击 **GitHub** 图标连接您的仓库
+   - 在 GitHub 授权页允许 EdgeOne 访问，并选择要授权的仓库（可只勾选本仓库，或授权全部）
+   - 选中 `edgeone-origin-webhook` 仓库，`main` 分支
+
+3. **填写构建配置**
+
+   | 配置项 | 建议值 | 说明 |
+   | --- | --- | --- |
+   | 项目名称 | `edgeone-origin-webhook` | 会影响默认域名前缀 |
+   | 根目录 | `/` | 保持默认 |
+   | 构建命令 | 留空 | 本项目不含静态站点无需编译；若平台强制要求，可填 `npm install` |
+   | 输出目录 | 留空 | 无静态产物 |
+   | 加速区域 | 按需选择 | 决定节点资源与自定义域名是否需备案 |
+
+   点击**开始部署**，等待构建完成即可获得形如 `https://xxx.edgeone.app` 的默认域名。
+
+4. **配置环境变量**
+
+   进入项目 → **设置 → 环境变量**，添加密钥（见上表）。注意两点：
+
+   - 环境变量**作用于整个项目，不区分生产/预览环境**
+   - 修改后需要**重新部署**才会生效
+
+5. **自动部署**
+
+   上述步骤完成后，向 `main` 分支的每次 `git push` 都会自动触发构建部署，无需手动操作。
+
+> 所谓"构建"实际就是识别 `cloud-functions/` 目录并将其中的 Handler 注册为路由。若部署后访问 `/update-origin` 返回 404，请优先检查目录名是否为 `cloud-functions`（不是 `node-functions`）以及文件是否导出了 `onRequest`。
 
 > `.env` 已被 `.gitignore` 忽略，密钥不会进入 GitHub；环境变量始终在 EdgeOne 控制台维护。
 
