@@ -273,62 +273,15 @@ curl -X POST "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin" \
 
 若仍返回 `MissingConfig`（消息为「缺少 ZoneId：请在请求体传入 zoneId，或在服务端配置 EO_ZONE_ID」），说明环境变量未保存或未触发重新部署，需要在控制台手动"重新部署"一次。
 
-### 关联 GitHub（CI 自动部署）
+### 部署后检查
 
-本项目已初始化 Git 仓库并完成首次提交。剩下的两步需要在 GitHub 与 EdgeOne 控制台完成：
+所谓"构建"实际就是识别 `cloud-functions/` 目录并将其中的 Handler 注册为路由。若部署后访问 `/update-origin` 返回 404，优先检查两点：
 
-1. **推送到 GitHub**
+1. 目录名是否为 `cloud-functions`（不是 `node-functions`）
+2. 入口文件是否导出了 `onRequest`
 
-   仓库已建好在 <https://github.com/Kleinsche/edgeone-origin-webhook>，本地也已关联 `origin`（`main` 分支），直接推送即可：
+另外，环境变量修改后需要**重新部署**才会生效；`.env` 已被 `.gitignore` 忽略不会被上传，密钥始终在控制台维护。
 
-   ```bash
-   git push -u origin main
-   ```
-
-   推送前建议把提交作者改成你自己的身份：
-
-   ```bash
-   git -c user.name="你的名字" -c user.email="你的邮箱" commit --amend --reset-author --no-edit
-   ```
-
-   若使用 SSH：`git remote set-url origin git@github.com:Kleinsche/edgeone-origin-webhook.git`
-
-2. **在 EdgeOne Makers 控制台导入仓库**
-
-   **推荐直接点击文首的一键部署按钮**，仓库、项目名、根目录、环境变量清单都会自动填好，跳过下面的授权与选仓步骤。
-
-   也可以手动打开 <https://console.cloud.tencent.com/edgeone/pages>，首次使用点击**立即开通**：
-
-   - 点击 **GitHub** 图标连接您的仓库
-   - 在 GitHub 授权页允许 EdgeOne 访问，并选择要授权的仓库（可只勾选本仓库，或授权全部）
-   - 选中 `edgeone-origin-webhook` 仓库，`main` 分支
-
-3. **填写构建配置**
-
-   | 配置项 | 建议值 | 说明 |
-   | --- | --- | --- |
-   | 项目名称 | `edgeone-origin-webhook` | 会影响默认域名前缀 |
-   | 根目录 | `/` | 保持默认 |
-   | 构建命令 | 留空 | 本项目不含静态站点无需编译；若平台强制要求，可填 `npm install` |
-   | 输出目录 | 留空 | 无静态产物 |
-   | 加速区域 | 按需选择 | 决定节点资源与自定义域名是否需备案 |
-
-   点击**开始部署**，等待构建完成即可获得形如 `https://xxx.edgeone.app` 的默认域名。
-
-4. **配置环境变量**
-
-   进入项目 → **设置 → 环境变量**，添加密钥（见上表）。注意两点：
-
-   - 环境变量**作用于整个项目，不区分生产/预览环境**
-   - 修改后需要**重新部署**才会生效
-
-5. **自动部署**
-
-   上述步骤完成后，向 `main` 分支的每次 `git push` 都会自动触发构建部署，无需手动操作。
-
-> 所谓"构建"实际就是识别 `cloud-functions/` 目录并将其中的 Handler 注册为路由。若部署后访问 `/update-origin` 返回 404，请优先检查目录名是否为 `cloud-functions`（不是 `node-functions`）以及文件是否导出了 `onRequest`。
-
-> `.env` 已被 `.gitignore` 忽略，密钥不会进入 GitHub；环境变量始终在 EdgeOne 控制台维护。
 
 ## 权限最小化建议
 
