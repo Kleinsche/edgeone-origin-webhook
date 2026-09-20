@@ -2,30 +2,26 @@
 
 <table><tr>
 <td align="center">
-  <a href="https://console.cloud.tencent.com/edgeone/makers/new?repository-url=https%3A%2F%2Fgithub.com%2FKleinsche%2Fedgeone-origin-webhook&repository-name=edgeone-origin-webhook&project-name=edgeone-origin-webhook&root-directory=%2F&install-command=npm%20install&env=EO_SECRET_ID%2CEO_SECRET_KEY%2CEO_ZONE_ID%2CWEBHOOK_TOKEN&env-description=EO_SECRET_ID%20%2F%20EO_SECRET_KEY%20%E4%BB%8E%E8%85%BE%E8%AE%AF%E4%BA%91%20CAM%20%E5%AF%86%E9%92%A5%E6%8E%A7%E5%88%B6%E5%8F%B0%E8%8E%B7%E5%8F%96%EF%BC%8C%E5%BB%BA%E8%AE%AE%E6%8E%88%E4%BA%88%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E7%AD%96%E7%95%A5%EF%BC%9BEO_ZONE_ID%20%E4%B8%BA%E9%BB%98%E8%AE%A4%E7%AB%99%E7%82%B9%20ID%EF%BC%88%E5%85%B6%E4%BB%96%E7%AB%99%E7%82%B9%E5%8F%AF%E5%9C%A8%E8%AF%B7%E6%B1%82%E4%BD%93%E4%BC%A0%20zoneId%20%E6%8C%87%E5%AE%9A%EF%BC%89%EF%BC%9BWEBHOOK_TOKEN%20%E4%B8%BA%E8%B0%83%E7%94%A8%E4%BB%A4%E7%89%8C%EF%BC%8C%E5%BC%BA%E7%83%88%E5%BB%BA%E8%AE%AE%E8%AE%BE%E7%BD%AE&env-link=https%3A%2F%2Fconsole.cloud.tencent.com%2Fcam%2Fcapi"><img src="https://cloudcache.tencent-cloud.com/qcloud/portal/kit/images/slice/logo.23996906.svg" alt="部署到 EdgeOne（中国站）" height="26"></a><br>
+  <a href="https://console.cloud.tencent.com/edgeone/makers/new?repository-url=https%3A%2F%2Fgithub.com%2FKleinsche%2Fedgeone-origin-webhook&repository-name=edgeone-origin-webhook&project-name=edgeone-origin-webhook&root-directory=%2F&install-command=npm%20install&env=EO_SECRET_ID%2CEO_SECRET_KEY%2CEO_ZONE_ID%2CWEBHOOK_TOKEN&env-description=EO_SECRET_ID%20%2F%20EO_SECRET_KEY%20%E4%BB%8E%E8%85%BE%E8%AE%AF%E4%BA%91%20CAM%20%E5%AF%86%E9%92%A5%E6%8E%A7%E5%88%B6%E5%8F%B0%E8%8E%B7%E5%8F%96%EF%BC%8C%E5%BB%BA%E8%AE%AE%E6%8E%88%E4%BA%88%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E7%AD%96%E7%95%A5%EF%BC%9BEO_ZONE_ID%20%E4%B8%BA%E9%BB%98%E8%AE%A4%E7%AB%99%E7%82%B9%20ID%EF%BC%88%E5%85%B6%E4%BB%96%E7%AB%99%E7%82%B9%E5%8F%AF%E5%9C%A8%E8%AF%B7%E6%B1%82%E4%BD%93%E4%BC%A0%20zoneId%20%E6%8C%87%E5%AE%9A%EF%BC%89%EF%BC%9BWEBHOOK_TOKEN%20%E4%B8%BA%E8%B0%83%E7%94%A8%E4%BB%A4%E7%89%8C%EF%BC%8C%E5%BC%BA%E7%83%88%E5%BB%BA%E8%AE%AE%E8%AE%BE%E7%BD%AE&env-link=https%3A%2F%2Fconsole.cloud.tencent.com%2Fcam%2Fcapi"><img src="assets/buttons/btn-cn.svg" alt="部署到 EdgeOne（中国站）" height="32"></a><br>
   <sub>中国站</sub>
 </td>
 <td align="center">
-  <a href="https://console.tencentcloud.com/edgeone/makers/new?repository-url=https%3A%2F%2Fgithub.com%2FKleinsche%2Fedgeone-origin-webhook&repository-name=edgeone-origin-webhook&project-name=edgeone-origin-webhook&root-directory=%2F&install-command=npm%20install&env=EO_SECRET_ID%2CEO_SECRET_KEY%2CEO_ZONE_ID%2CWEBHOOK_TOKEN&env-description=EO_SECRET_ID%20%2F%20EO_SECRET_KEY%20%E4%BB%8E%E8%85%BE%E8%AE%AF%E4%BA%91%20CAM%20%E5%AF%86%E9%92%A5%E6%8E%A7%E5%88%B6%E5%8F%B0%E8%8E%B7%E5%8F%96%EF%BC%8C%E5%BB%BA%E8%AE%AE%E6%8E%88%E4%BA%88%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E7%AD%96%E7%95%A5%EF%BC%9BEO_ZONE_ID%20%E4%B8%BA%E9%BB%98%E8%AE%A4%E7%AB%99%E7%82%B9%20ID%EF%BC%88%E5%85%B6%E4%BB%96%E7%AB%99%E7%82%B9%E5%8F%AF%E5%9C%A8%E8%AF%B7%E6%B1%82%E4%BD%93%E4%BC%A0%20zoneId%20%E6%8C%87%E5%AE%9A%EF%BC%89%EF%BC%9BWEBHOOK_TOKEN%20%E4%B8%BA%E8%B0%83%E7%94%A8%E4%BB%A4%E7%89%8C%EF%BC%8C%E5%BC%BA%E7%83%88%E5%BB%BA%E8%AE%AE%E8%AE%BE%E7%BD%AE&env-link=https%3A%2F%2Fconsole.tencentcloud.com%2Fcam%2Fcapi"><img src="https://staticintl.cloudcachetci.com/yehe/backend-news/VYt5270_qc-topnav-logo.svg" alt="部署到 EdgeOne（国际站）" height="26"></a><br>
+  <a href="https://console.tencentcloud.com/edgeone/makers/new?repository-url=https%3A%2F%2Fgithub.com%2FKleinsche%2Fedgeone-origin-webhook&repository-name=edgeone-origin-webhook&project-name=edgeone-origin-webhook&root-directory=%2F&install-command=npm%20install&env=EO_SECRET_ID%2CEO_SECRET_KEY%2CEO_ZONE_ID%2CWEBHOOK_TOKEN&env-description=EO_SECRET_ID%20%2F%20EO_SECRET_KEY%20%E4%BB%8E%E8%85%BE%E8%AE%AF%E4%BA%91%20CAM%20%E5%AF%86%E9%92%A5%E6%8E%A7%E5%88%B6%E5%8F%B0%E8%8E%B7%E5%8F%96%EF%BC%8C%E5%BB%BA%E8%AE%AE%E6%8E%88%E4%BA%88%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E7%AD%96%E7%95%A5%EF%BC%9BEO_ZONE_ID%20%E4%B8%BA%E9%BB%98%E8%AE%A4%E7%AB%99%E7%82%B9%20ID%EF%BC%88%E5%85%B6%E4%BB%96%E7%AB%99%E7%82%B9%E5%8F%AF%E5%9C%A8%E8%AF%B7%E6%B1%82%E4%BD%93%E4%BC%A0%20zoneId%20%E6%8C%87%E5%AE%9A%EF%BC%89%EF%BC%9BWEBHOOK_TOKEN%20%E4%B8%BA%E8%B0%83%E7%94%A8%E4%BB%A4%E7%89%8C%EF%BC%8C%E5%BC%BA%E7%83%88%E5%BB%BA%E8%AE%AE%E8%AE%BE%E7%BD%AE&env-link=https%3A%2F%2Fconsole.tencentcloud.com%2Fcam%2Fcapi"><img src="assets/buttons/btn-intl.svg" alt="部署到 EdgeOne（国际站）" height="32"></a><br>
   <sub>国际站</sub>
 </td>
 <td align="center">
-  <a href="https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2FKleinsche%2Fedgeone-origin-webhook&repository-name=edgeone-origin-webhook&project-name=edgeone-origin-webhook&root-directory=%2F&install-command=npm%20install&env=EO_SECRET_ID%2CEO_SECRET_KEY%2CEO_ZONE_ID%2CWEBHOOK_TOKEN&env-description=EO_SECRET_ID%20%2F%20EO_SECRET_KEY%20%E4%BB%8E%E8%85%BE%E8%AE%AF%E4%BA%91%20CAM%20%E5%AF%86%E9%92%A5%E6%8E%A7%E5%88%B6%E5%8F%B0%E8%8E%B7%E5%8F%96%EF%BC%8C%E5%BB%BA%E8%AE%AE%E6%8E%88%E4%BA%88%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E7%AD%96%E7%95%A5%EF%BC%9BEO_ZONE_ID%20%E4%B8%BA%E9%BB%98%E8%AE%A4%E7%AB%99%E7%82%B9%20ID%EF%BC%88%E5%85%B6%E4%BB%96%E7%AB%99%E7%82%B9%E5%8F%AF%E5%9C%A8%E8%AF%B7%E6%B1%82%E4%BD%93%E4%BC%A0%20zoneId%20%E6%8C%87%E5%AE%9A%EF%BC%89%EF%BC%9BWEBHOOK_TOKEN%20%E4%B8%BA%E8%B0%83%E7%94%A8%E4%BB%A4%E7%89%8C%EF%BC%8C%E5%BC%BA%E7%83%88%E5%BB%BA%E8%AE%AE%E8%AE%BE%E7%BD%AE&env-link=https%3A%2F%2Fconsole.tencentcloud.com%2Fcam%2Fcapi"><img src="https://edgeone.ai/_next/static/media/headLogo.daeb48ad.png?auto=format&amp;fit=max&amp;w=1080" alt="部署到 EdgeOne（EdgeOne.ai）" height="26"></a><br>
+  <a href="https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2FKleinsche%2Fedgeone-origin-webhook&repository-name=edgeone-origin-webhook&project-name=edgeone-origin-webhook&root-directory=%2F&install-command=npm%20install&env=EO_SECRET_ID%2CEO_SECRET_KEY%2CEO_ZONE_ID%2CWEBHOOK_TOKEN&env-description=EO_SECRET_ID%20%2F%20EO_SECRET_KEY%20%E4%BB%8E%E8%85%BE%E8%AE%AF%E4%BA%91%20CAM%20%E5%AF%86%E9%92%A5%E6%8E%A7%E5%88%B6%E5%8F%B0%E8%8E%B7%E5%8F%96%EF%BC%8C%E5%BB%BA%E8%AE%AE%E6%8E%88%E4%BA%88%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E7%AD%96%E7%95%A5%EF%BC%9BEO_ZONE_ID%20%E4%B8%BA%E9%BB%98%E8%AE%A4%E7%AB%99%E7%82%B9%20ID%EF%BC%88%E5%85%B6%E4%BB%96%E7%AB%99%E7%82%B9%E5%8F%AF%E5%9C%A8%E8%AF%B7%E6%B1%82%E4%BD%93%E4%BC%A0%20zoneId%20%E6%8C%87%E5%AE%9A%EF%BC%89%EF%BC%9BWEBHOOK_TOKEN%20%E4%B8%BA%E8%B0%83%E7%94%A8%E4%BB%A4%E7%89%8C%EF%BC%8C%E5%BC%BA%E7%83%88%E5%BB%BA%E8%AE%AE%E8%AE%BE%E7%BD%AE&env-link=https%3A%2F%2Fconsole.tencentcloud.com%2Fcam%2Fcapi"><img src="assets/buttons/btn-ai.svg" alt="部署到 EdgeOne（EdgeOne.ai）" height="32"></a><br>
   <sub>EdgeOne.ai</sub>
 </td>
 </tr></table>
 
 按你的账号所在平台点任意一个按钮，会跳转到对应的 EdgeOne Makers 控制台，下面这些字段链接已自动带好，无需手填：
 
-三个按钮用的是各自站点的官方 Logo，按钮下方的文字标注了区域，从左到右依次是中国站、国际站、EdgeOne.ai：
-
-| 按钮 | Logo | 控制台域名 | 适用账号 |
-| --- | --- | --- | --- |
-| 中国站 | 腾讯云深墨蓝字标（`80×18`） | `console.cloud.tencent.com` | 腾讯云中国站账号 |
-| 国际站 | 腾讯云亮蓝字标（`130×22`） | `console.tencentcloud.com` | 腾讯云国际站账号，适合站点开在海外、不走中国站的情况 |
-| EdgeOne.ai | EdgeOne 深蓝字标（`414×60`） | `edgeone.ai` | EdgeOne 海外独立站点账号 |
-
-三个按钮部署的是同一份代码，功能没有差别。
+| 按钮 | 底色 / 描边 | Logo（本地文件） | 控制台域名 | 适用账号 |
+| --- | --- | --- | --- | --- |
+| 中国站 | 浅蓝 | 腾讯云深墨蓝字标 | `console.cloud.tencent.com` | 腾讯云中国站账号 |
+| 国际站 | 浅绿 | 腾讯云亮蓝字标 | `console.tencentcloud.com` | 腾讯云国际站账号，适合站点开在海外、不走中国站的情况 |
+| EdgeOne.ai | 浅橙 | EdgeOne 深蓝字标 | `edgeone.ai` | EdgeOne 海外独立站点账号 |
 
 | 字段 | 预填值 |
 | --- | --- |
@@ -320,3 +316,7 @@ curl -X POST "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin" \
 2. 修改 `OriginInfo` 会覆盖原主源站；多源站请用逗号分隔一次传入全部地址。
 3. 若域名当前源站类型是 `COS`、`ORIGIN_GROUP` 等对象存储/源站组，脚本会沿用其 `OriginType` 直接改写地址，可先临时设置 `EO_ALLOW_DESCRIBE=true` 后用 `GET /update-origin?domain=xxx&token=<令牌>` 确认再操作，或直接用 `dryRun` 预览变更。
 4. API 请求签名依赖机器时间，需保证云函数运行环境时间准确（TEO 要求时间戳偏差不超过 5 分钟）。
+
+## 开源许可证
+
+本项目采用 [MIT](LICENSE) 许可证，可自由使用、修改和分发。

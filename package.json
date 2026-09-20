@@ -1,8 +1,9 @@
 {
   "name": "edgeone-origin-webhook",
   "version": "1.0.0",
-  "private": true,
   "description": "EdgeOne Makers Cloud Functions：通过 Webhook 更新加速域名回源 IP 与 HTTP/HTTPS 回源端口",
+  "private": true,
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=18"
