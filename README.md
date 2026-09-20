@@ -47,8 +47,11 @@ API 版本：`2022-09-01`，服务名：`teo`，接入点：`https://teo.tencent
 | `EO_API_ENDPOINT` | 否 | 自定义接入点 |
 | `EO_API_TIMEOUT_MS` | 否 | 单次 API 调用超时，默认 `15000` |
 | `EO_API_REGION` | 否 | `X-TC-Region`，TEO 为全球服务，一般无需设置 |
+| `EO_ALLOW_GET_UPDATE` | 否 | 设为 `true` 时允许用 **GET** 触发更新，方便只能拼接 URL 的调用方（如 Lucky Callweb）。默认关闭 |
 
 本地调试：复制 `.env.example` 为 `.env`。
+
+> 令牌可放在三种位置任一：`X-Webhook-Token` 头、`Authorization: Bearer <token>` 头，或请求体/query 里的 `token` 字段。Lucky 不易设置请求头时，用 `token` 字段最省事。
 
 ## 接口说明
 
@@ -130,6 +133,43 @@ curl -X POST https://<你的 EdgeOne 域名>/update-origin \
 ```
 
 令牌也可通过 `Authorization: Bearer <token>` 或请求体 `"token": "<token>"` 传递。
+
+## 从 Lucky 调用
+
+Lucky 通过**计划任务 → Callweb 子任务**发起请求，变量语法是单花括号 `{变量名}`。
+
+### 方式一：POST + JSON 请求体（推荐）
+
+添加计划任务 → 子任务类型选 **Callweb**：
+
+| 字段 | 填写内容 |
+| --- | --- |
+| 请求 URL | `https://<你的 EdgeOne 域名>/update-origin` |
+| 请求方式 | `POST` |
+| 请求头 | `Content-Type: application/json` 换行 `X-Webhook-Token: your-strong-random-token` |
+| 请求体 | `{"domain":"www.example.com","ip":"{CRON_任务名称_1}","httpPort":80,"httpsPort":443}` |
+
+请求体中的 IP 用 Lucky 变量替换，可用写法：
+
+| 变量 | 含义 |
+| --- | --- |
+| `{CRON_任务名称_N}` | 第 N 个子任务（脚本 / Callweb）的执行结果，序号从 1 开始 |
+| `{STUN_规则名_IP}` | 引用某条 STUN 穿透规则的穿透 IP |
+| `{DNS_TXT_域名_IP}` | 从 DNS TXT 记录解析出的 IP |
+
+典型做法是**两个子任务配合**：子任务 1 用 Callweb 请求公网 IP 查询接口（如 Lucky 官网的 `66666.host`）拿到 IP，子任务 2 引用 `{CRON_任务名称_1}` 作为 `ip` 值调用本接口。
+
+### 方式二：GET（只能拼 URL 时使用）
+
+若调用端不方便设置请求头或请求体，可先在项目环境变量里设置 `EO_ALLOW_GET_UPDATE=true`，然后：
+
+```
+https://<你的 EdgeOne 域名>/update-origin?domain=www.example.com&ip={CRON_任务名称_1}&httpPort=80&httpsPort=443&token=your-strong-random-token
+```
+
+规则：`GET /update-origin?domain=...&ip=...` 触发更新；不带 `ip` 时保持查询行为。令牌放在 query 的 `token` 参数中同样有效。
+
+> 注意 GET 请求可能被 CDN 或浏览器缓存，且 URL 会带明文令牌，建议仅在可信的内网/服务端调用场景使用。
 
 ## 部署
 

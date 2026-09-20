@@ -23,6 +23,7 @@
  *   EO_ORIGIN_SEPARATOR          可选，多源站分隔符，默认 ","
  *   EO_API_ENDPOINT              可选，默认 https://teo.tencentcloudapi.com
  *   EO_API_TIMEOUT_MS            可选，接口超时，默认 15000
+ *   EO_ALLOW_GET_UPDATE          可选，true 时允许用 GET 触发更新（便于 Lucky 等只能拼 URL 的调用方）
  */
 
 import { TeoClient, TeoApiError } from './lib/teo-client.js';
@@ -174,7 +175,9 @@ function describeOriginConfig(domain) {
 async function handleDescribe(context, url) {
   const zoneId = env(context, 'EO_ZONE_ID');
   if (!zoneId) return fail(500, 'MissingConfig', '服务端未配置 EO_ZONE_ID');
-  if (!isTokenValid(context, context.request, {})) {
+  // 令牌也支持放在 query 参数里，便于只能拼接 URL 的调用方
+  const queryPayload = Object.fromEntries(url.searchParams.entries());
+  if (!isTokenValid(context, context.request, queryPayload)) {
     return fail(401, 'Unauthorized', 'Webhook 令牌校验失败');
   }
 
@@ -249,45 +252,56 @@ export async function onRequest(context) {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
+  const query = Object.fromEntries(new URL(request.url).searchParams.entries());
+
+  // GET 默认仅查询。开启 EO_ALLOW_GET_UPDATE 后，GET 携带 domain + ip 即可触发更新，
+  // 便于只能拼接 URL 的调用方（如 Lucky 计划任务 Callweb）直接调用。
+  let payload = null;
   if (request.method === 'GET') {
-    const url = new URL(request.url);
-    return handleDescribe(context, url);
+    const allowGetUpdate = String(env(context, 'EO_ALLOW_GET_UPDATE')).toLowerCase() === 'true';
+    const hasOriginParam = pick(query, ['ip', 'ipAddress', 'origin', 'origins', 'ipList']);
+    if (allowGetUpdate && query.domain && hasOriginParam) {
+      payload = query;
+    } else {
+      return handleDescribe(context, new URL(request.url));
+    }
   }
 
-  if (request.method !== 'POST') {
+  if (request.method !== 'POST' && payload === null) {
     return fail(405, 'MethodNotAllowed', '仅支持 GET / POST，请使用 POST 提交更新请求');
   }
 
   // ---------- 解析请求体 ----------
   // 支持 application/json、application/x-www-form-urlencoded 以及纯 query 传参
-  const contentType = request.headers.get('content-type') || '';
-  const query = Object.fromEntries(new URL(request.url).searchParams.entries());
+  if (payload === null) {
+    const contentType = request.headers.get('content-type') || '';
+    payload = {};
 
-  let payload = {};
-  let raw = '';
-  try {
-    raw = await request.text();
-  } catch {
-    raw = '';
-  }
+    let raw = '';
+    try {
+      raw = await request.text();
+    } catch {
+      raw = '';
+    }
 
-  if (raw.trim()) {
-    if (contentType.includes('application/x-www-form-urlencoded')) {
-      payload = Object.fromEntries(new URLSearchParams(raw).entries());
-    } else {
-      try {
-        payload = JSON.parse(raw);
-      } catch (err) {
-        return fail(400, 'InvalidBody', `请求体不是合法 JSON：${err.message}`);
+    if (raw.trim()) {
+      if (contentType.includes('application/x-www-form-urlencoded')) {
+        payload = Object.fromEntries(new URLSearchParams(raw).entries());
+      } else {
+        try {
+          payload = JSON.parse(raw);
+        } catch (err) {
+          return fail(400, 'InvalidBody', `请求体不是合法 JSON：${err.message}`);
+        }
       }
     }
-  }
 
-  // 请求体为空或非对象时，回退到 URL query 参数
-  const invalidPayload = typeof payload !== 'object' || payload === null || Array.isArray(payload);
-  if (invalidPayload || Object.keys(payload).length === 0) {
-    if (invalidPayload) return fail(400, 'InvalidBody', '请求体必须是 JSON 对象');
-    payload = query;
+    // 请求体为空或非对象时，回退到 URL query 参数
+    const invalidPayload = typeof payload !== 'object' || payload === null || Array.isArray(payload);
+    if (invalidPayload || Object.keys(payload).length === 0) {
+      if (invalidPayload) return fail(400, 'InvalidBody', '请求体必须是 JSON 对象');
+      payload = query;
+    }
   }
 
   // ---------- 鉴权 ----------
