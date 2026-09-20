@@ -10,7 +10,7 @@
  *   "ip":        "1.2.3.4",           // 必填，回源 IP（多个用逗号分隔或传数组）
  *   "httpPort":  80,                  // HTTP 回源端口，缺省 80
  *   "httpsPort": 443,                 // HTTPS 回源端口，缺省 443
- *   "originProtocol": "FOLLOW",       // 可选：FOLLOW / HTTP / HTTPS，缺省沿用现有配置
+ *   "originProtocol": "FOLLOW",       // 可选：仅在需要变更回源协议时传（FOLLOW / HTTP / HTTPS），不传则保持现有配置
  *   "dryRun":    false                // 可选：true 时只做校验与预览，不真正下发
  * }
  *
@@ -19,7 +19,6 @@
  *   EO_SECRET_KEY  腾讯云 SecretKey（也支持 TENCENTCLOUD_SECRET_KEY）
  *   EO_ZONE_ID     默认站点 ID，如 zone-2xxx；调用方可在请求体传 zoneId 覆盖
  *   WEBHOOK_TOKEN  可选，配置后 Webhook 需携带该令牌
- *   EO_DEFAULT_ORIGIN_PROTOCOL  可选，缺省回源协议（FOLLOW / HTTP / HTTPS）
  *   EO_ALLOWED_DOMAINS           可选，允许操作的域名白名单，逗号分隔，支持 *.example.com
  *   EO_ALLOWED_ZONE_IDS          可选，允许操作的站点白名单，逗号分隔；不设则不限制 zoneId
  *   EO_ORIGIN_SEPARATOR          可选，多源站分隔符，默认 ","
@@ -75,6 +74,8 @@ const IPV4_LIKE_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
 const DOMAIN_RE = /^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 // 仅做基础格式判断，完整 IPv6 交由 EdgeOne 后端校验
 const IPV6_RE = /^[0-9a-fA-F:]{2,45}$/;
+/** 允许的回源协议取值；仅在调用方显式传入时用于覆盖域名现有配置 */
+const ALLOWED_ORIGIN_PROTOCOLS = ['FOLLOW', 'HTTP', 'HTTPS'];
 
 function isOriginAddress(value) {
   if (IPV4_RE.test(value)) return true;
@@ -390,7 +391,16 @@ export async function onRequest(context) {
   }
 
   const dryRun = payload.dryRun === true || String(payload.dryRun).toLowerCase() === 'true';
-  const requestedProtocol = pick(payload, ['originProtocol', 'protocol']);
+
+  // 回源协议只在调用方显式传入时才变更，不传则沿用域名现有配置（不再从环境变量取默认值）
+  let requestedProtocol = null;
+  const rawProtocol = pick(payload, ['originProtocol', 'protocol']);
+  if (rawProtocol !== undefined && rawProtocol !== null && String(rawProtocol).trim() !== '') {
+    requestedProtocol = String(rawProtocol).trim().toUpperCase();
+    if (!ALLOWED_ORIGIN_PROTOCOLS.includes(requestedProtocol)) {
+      return fail(400, 'InvalidParameter', `回源协议取值无效：${rawProtocol}（可选 FOLLOW / HTTP / HTTPS）`);
+    }
+  }
 
   // ---------- 调用 EdgeOne API ----------
   try {
@@ -406,11 +416,8 @@ export async function onRequest(context) {
     const originType = before.originType || 'IP_DOMAIN';
 
     const originInfo = { OriginType: originType, Origin: origin };
-    const protocol =
-      requestedProtocol ||
-      env(context, 'EO_DEFAULT_ORIGIN_PROTOCOL') ||
-      before.originProtocol ||
-      undefined;
+    // 未传 originProtocol 时保持域名现有回源协议不变
+    const protocol = requestedProtocol || before.originProtocol || undefined;
 
     if (dryRun) {
       return json({

@@ -57,7 +57,6 @@ API 版本：`2022-09-01`，服务名：`teo`，接入点：`https://teo.tencent
 | `EO_SECRET_KEY` | 是 | 腾讯云 SecretKey（兼容别名 `TENCENTCLOUD_SECRET_KEY`） |
 | `EO_ZONE_ID` | 是 | **默认站点 ID**，形如 `zone-225qgrnvbi9w`，在站点概览页获取。请求不带 `zoneId` 时作用于该站点；其他站点可用请求体 `zoneId` 临时指定 |
 | `WEBHOOK_TOKEN` | 否 | Webhook 调用令牌。**强烈建议设置**，否则任何人都能改你的回源配置 |
-| `EO_DEFAULT_ORIGIN_PROTOCOL` | 否 | 缺省回源协议 `FOLLOW` / `HTTP` / `HTTPS`，不设置则沿用域名现有配置 |
 | `EO_ALLOWED_DOMAINS` | 否 | 域名白名单，逗号分隔，支持通配子域，如 `*.example.com,assets.example.com` |
 | `EO_ALLOWED_ZONE_IDS` | 否 | 站点白名单，逗号分隔；不设置时不限制 `zoneId`。若希望限制调用方只能操作指定站点，务必配置 |
 | `EO_ORIGIN_SEPARATOR` | 否 | 多源站分隔符，默认 `,` |
@@ -122,7 +121,7 @@ X-Webhook-Token: <WEBHOOK_TOKEN>
 | `ip` | 是 | 回源 IP，支持 IPv4 / IPv6 / 域名；多个源站可用逗号分隔或传数组（同义字段：`ipAddress` / `origin`） |
 | `httpPort` | 否 | HTTP 回源端口，1-65535，默认 `80` |
 | `httpsPort` | 否 | HTTPS 回源端口，1-65535，默认 `443` |
-| `originProtocol` | 否 | `FOLLOW` / `HTTP` / `HTTPS`，不传则沿用现有配置 |
+| `originProtocol` | 否 | **仅在需要变更回源协议时填写**：`FOLLOW` / `HTTP` / `HTTPS`。不填则保持域名现有协议不变；取值非法返回 `400` |
 | `dryRun` | 否 | `true` 时只做校验并返回变更预览，不下发修改 |
 
 也支持 `application/x-www-form-urlencoded` 或直接在 URL query 上传参。
