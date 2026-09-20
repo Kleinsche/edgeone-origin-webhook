@@ -5,6 +5,7 @@
  *
  * 请求体（application/json）：
  * {
+ *   "zoneId":    "zone-225qgrnvbi9w",  // 可选：站点 ID，缺省使用环境变量 EO_ZONE_ID
  *   "domain":    "www.example.com",   // 必填，EdgeOne 上已接入的加速域名
  *   "ip":        "1.2.3.4",           // 必填，回源 IP（多个用逗号分隔或传数组）
  *   "httpPort":  80,                  // HTTP 回源端口，缺省 80
@@ -16,10 +17,11 @@
  * 环境变量：
  *   EO_SECRET_ID   腾讯云 SecretId（也支持 TENCENTCLOUD_SECRET_ID）
  *   EO_SECRET_KEY  腾讯云 SecretKey（也支持 TENCENTCLOUD_SECRET_KEY）
- *   EO_ZONE_ID     站点 ID，如 zone-2xxx
+ *   EO_ZONE_ID     默认站点 ID，如 zone-2xxx；调用方可在请求体传 zoneId 覆盖
  *   WEBHOOK_TOKEN  可选，配置后 Webhook 需携带该令牌
  *   EO_DEFAULT_ORIGIN_PROTOCOL  可选，缺省回源协议（FOLLOW / HTTP / HTTPS）
  *   EO_ALLOWED_DOMAINS           可选，允许操作的域名白名单，逗号分隔，支持 *.example.com
+ *   EO_ALLOWED_ZONE_IDS          可选，允许操作的站点白名单，逗号分隔；不设则不限制 zoneId
  *   EO_ORIGIN_SEPARATOR          可选，多源站分隔符，默认 ","
  *   EO_API_ENDPOINT              可选，默认 https://teo.tencentcloudapi.com
  *   EO_API_TIMEOUT_MS            可选，接口超时，默认 15000
@@ -142,6 +144,49 @@ function isDomainAllowed(context, domain) {
   });
 }
 
+// ZoneId 由 站点标识 + 随机串构成，形如 zone-225qgrnvbi9w；此处只做字符集与长度约束
+const ZONE_ID_RE = /^[A-Za-z0-9][A-Za-z0-9-]{3,63}$/;
+
+/** 站点白名单：逗号分隔精确匹配，留空则不限制 */
+function isZoneAllowed(context, zoneId) {
+  const whitelist = env(context, 'EO_ALLOWED_ZONE_IDS');
+  if (!whitelist) return true;
+  const rules = whitelist.split(',').map((item) => item.trim()).filter(Boolean);
+  if (rules.length === 0) return true;
+  return rules.includes(zoneId);
+}
+
+/**
+ * 解析本次请求使用的 ZoneId。
+ * 优先级：请求体 / query 中的 zoneId（兼容 zone_id、zone）> 环境变量 EO_ZONE_ID。
+ * 返回 { zoneId } 或 { error: Response }。
+ */
+function resolveZoneId(context, payload) {
+  const requested = pick(payload, ['zoneId', 'zone_id', 'zone']);
+  const raw = requested !== undefined && String(requested).trim() !== ''
+    ? String(requested)
+    : env(context, 'EO_ZONE_ID');
+
+  if (raw === undefined || String(raw).trim() === '') {
+    return {
+      error: fail(
+        500,
+        'MissingConfig',
+        '缺少 ZoneId：请在请求体传入 zoneId，或在服务端配置 EO_ZONE_ID',
+      ),
+    };
+  }
+
+  const zoneId = String(raw).trim();
+  if (!ZONE_ID_RE.test(zoneId)) {
+    return { error: fail(400, 'InvalidParameter', `ZoneId 格式无效：${zoneId}`) };
+  }
+  if (!isZoneAllowed(context, zoneId)) {
+    return { error: fail(403, 'ZoneForbidden', `站点 ${zoneId} 不在 EO_ALLOWED_ZONE_IDS 白名单内`) };
+  }
+  return { zoneId };
+}
+
 /** 令牌校验，未配置 WEBHOOK_TOKEN 时放行 */
 function isTokenValid(context, request, payload) {
   const expected = env(context, 'WEBHOOK_TOKEN');
@@ -195,8 +240,10 @@ async function handleDescribe(context, url) {
     return fail(401, 'Unauthorized', 'Webhook 令牌校验失败');
   }
 
-  const zoneId = env(context, 'EO_ZONE_ID');
-  if (!zoneId) return fail(500, 'MissingConfig', '服务端未配置 EO_ZONE_ID');
+  // ZoneId 同样支持从 query 指定，缺省回退到环境变量 EO_ZONE_ID
+  const zone = resolveZoneId(context, queryPayload);
+  if (zone.error) return zone.error;
+  const zoneId = zone.zoneId;
 
   // 只支持按域名精确查询，不再返回全站点域名清单（否则一次请求即泄露全部域名与源站）
   const domainParam = url.searchParams.get('domain');
@@ -311,8 +358,10 @@ export async function onRequest(context) {
   }
 
   // ---------- 参数校验 ----------
-  const zoneId = env(context, 'EO_ZONE_ID');
-  if (!zoneId) return fail(500, 'MissingConfig', '服务端未配置 EO_ZONE_ID');
+  // ZoneId 支持由调用方指定，缺省回退到环境变量 EO_ZONE_ID
+  const zone = resolveZoneId(context, payload);
+  if (zone.error) return zone.error;
+  const zoneId = zone.zoneId;
 
   const separator = env(context, 'EO_ORIGIN_SEPARATOR') || ',';
 

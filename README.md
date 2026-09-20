@@ -55,10 +55,11 @@ API 版本：`2022-09-01`，服务名：`teo`，接入点：`https://teo.tencent
 | --- | --- | --- |
 | `EO_SECRET_ID` | 是 | 腾讯云 SecretId（兼容别名 `TENCENTCLOUD_SECRET_ID`） |
 | `EO_SECRET_KEY` | 是 | 腾讯云 SecretKey（兼容别名 `TENCENTCLOUD_SECRET_KEY`） |
-| `EO_ZONE_ID` | 是 | EdgeOne 站点 ID，形如 `zone-225qgrnvbi9w` |
+| `EO_ZONE_ID` | 是 | 默认 EdgeOne 站点 ID，形如 `zone-225qgrnvbi9w`；调用方可在请求体传 `zoneId` 覆盖 |
 | `WEBHOOK_TOKEN` | 否 | Webhook 调用令牌。**强烈建议设置**，否则任何人都能改你的回源配置 |
 | `EO_DEFAULT_ORIGIN_PROTOCOL` | 否 | 缺省回源协议 `FOLLOW` / `HTTP` / `HTTPS`，不设置则沿用域名现有配置 |
 | `EO_ALLOWED_DOMAINS` | 否 | 域名白名单，逗号分隔，支持通配子域，如 `*.example.com,assets.example.com` |
+| `EO_ALLOWED_ZONE_IDS` | 否 | 站点白名单，逗号分隔；不设置时不限制 `zoneId`。若希望限制调用方只能操作指定站点，务必配置 |
 | `EO_ORIGIN_SEPARATOR` | 否 | 多源站分隔符，默认 `,` |
 | `EO_API_ENDPOINT` | 否 | 自定义接入点 |
 | `EO_API_TIMEOUT_MS` | 否 | 单次 API 调用超时，默认 `15000` |
@@ -92,6 +93,7 @@ X-Webhook-Token: <WEBHOOK_TOKEN>
 
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
+| `zoneId` | 否 | 站点 ID，缺省使用环境变量 `EO_ZONE_ID`（同义字段：`zone_id` / `zone`） |
 | `domain` | 是 | 加速域名（同义字段：`domainName` / `hostname`） |
 | `ip` | 是 | 回源 IP，支持 IPv4 / IPv6 / 域名；多个源站可用逗号分隔或传数组（同义字段：`ipAddress` / `origin`） |
 | `httpPort` | 否 | HTTP 回源端口，1-65535，默认 `80` |
@@ -100,6 +102,8 @@ X-Webhook-Token: <WEBHOOK_TOKEN>
 | `dryRun` | 否 | `true` 时只做校验并返回变更预览，不下发修改 |
 
 也支持 `application/x-www-form-urlencoded` 或直接在 URL query 上传参。
+
+传了 `zoneId` 就以请求值为准，未传则用 `EO_ZONE_ID`。若服务端配置了 `EO_ALLOWED_ZONE_IDS`，传入的站点必须落在白名单内，否则返回 `403 ZoneForbidden`。
 
 成功响应：
 
