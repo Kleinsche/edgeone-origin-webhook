@@ -1,5 +1,21 @@
 # EdgeOne 回源配置更新 Webhook
 
+[![使用 EdgeOne Makers 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2FKleinsche%2Fedgeone-origin-webhook&repository-name=edgeone-origin-webhook&project-name=edgeone-origin-webhook&root-directory=%2F&install-command=npm%20install&env=EO_SECRET_ID%2CEO_SECRET_KEY%2CEO_ZONE_ID%2CWEBHOOK_TOKEN%2CEO_ALLOWED_DOMAINS&env-description=EO_SECRET_ID%20%2F%20EO_SECRET_KEY%20%E4%BB%8E%20CAM%20%E5%AF%86%E9%92%A5%E6%8E%A7%E5%88%B6%E5%8F%B0%E8%8E%B7%E5%8F%96%EF%BC%8C%E5%BB%BA%E8%AE%AE%E6%8E%88%E4%BA%88%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90%E7%AD%96%E7%95%A5%EF%BC%9BEO_ZONE_ID%20%E4%B8%BA%20EdgeOne%20%E7%AB%99%E7%82%B9%20ID%EF%BC%9BWEBHOOK_TOKEN%20%E4%B8%BA%E8%B0%83%E7%94%A8%E4%BB%A4%E7%89%8C%EF%BC%8C%E5%BC%BA%E7%83%88%E5%BB%BA%E8%AE%AE%E8%AE%BE%E7%BD%AE%EF%BC%9BEO_ALLOWED_DOMAINS%20%E4%B8%BA%E5%85%81%E8%AE%B8%E6%93%8D%E4%BD%9C%E7%9A%84%E5%9F%9F%E5%90%8D%E7%99%BD%E5%90%8D%E5%8D%95&env-link=https%3A%2F%2Fconsole.cloud.tencent.com%2Fcam%2Fcapi)
+
+点上面的按钮会跳转到 EdgeOne Makers，下面这些字段链接已自动带好，无需手填：
+
+| 字段 | 预填值 |
+| --- | --- |
+| 部署来源 | GitHub 仓库 `https://github.com/Kleinsche/edgeone-origin-webhook` |
+| 项目名称 | `edgeone-origin-webhook` |
+| 分支 | `main` |
+| 构建根目录 | `/` |
+| 安装命令 | `npm install` |
+| 构建命令 / 输出目录 | 均留空（本项目只有云函数，无静态产物） |
+| 环境变量清单 | `EO_SECRET_ID`、`EO_SECRET_KEY`、`EO_ZONE_ID`、`WEBHOOK_TOKEN`、`EO_ALLOWED_DOMAINS` |
+
+环境变量的**取值**仍要在控制台补齐：密钥到 [CAM 控制台](https://console.cloud.tencent.com/cam/capi) 获取，`EO_ZONE_ID` 在站点概览页获取，`WEBHOOK_TOKEN` 填一个高强度随机串，`EO_ALLOWED_DOMAINS` 填允许操作的域名白名单。完整说明见下方 [环境变量](#环境变量)。
+
 部署在 **EdgeOne Makers Cloud Functions** 上的中间脚本：对外暴露一个 HTTP 接口，接收 Webhook 请求后调用腾讯云 EdgeOne（TEO）开放 API，更新指定加速域名的**回源 IP** 与 **HTTP/HTTPS 回源端口**。
 
 密钥 SecretId / SecretKey / ZoneId 统一从环境变量读取，不落盘、不回显在响应中。
@@ -225,11 +241,9 @@ curl -X POST "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin" \
 
 1. **推送到 GitHub**
 
-   在 GitHub 新建一个空仓库（不要勾选初始化 README），然后执行：
+   仓库已建好在 <https://github.com/Kleinsche/edgeone-origin-webhook>，本地也已关联 `origin`（`main` 分支），直接推送即可：
 
    ```bash
-   git branch -M main
-   git remote add origin https://github.com/<你的账号>/<仓库名>.git
    git push -u origin main
    ```
 
@@ -239,11 +253,13 @@ curl -X POST "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin" \
    git -c user.name="你的名字" -c user.email="你的邮箱" commit --amend --reset-author --no-edit
    ```
 
-   若使用 SSH：`git remote set-url origin git@github.com:<账号>/<仓库名>.git`
+   若使用 SSH：`git remote set-url origin git@github.com:Kleinsche/edgeone-origin-webhook.git`
 
 2. **在 EdgeOne Makers 控制台导入仓库**
 
-   打开 <https://console.cloud.tencent.com/edgeone/pages>，首次使用点击**立即开通**。
+   **推荐直接点击文首的一键部署按钮**，仓库、项目名、根目录、环境变量清单都会自动填好，跳过下面的授权与选仓步骤。
+
+   也可以手动打开 <https://console.cloud.tencent.com/edgeone/pages>，首次使用点击**立即开通**：
 
    - 点击 **GitHub** 图标连接您的仓库
    - 在 GitHub 授权页允许 EdgeOne 访问，并选择要授权的仓库（可只勾选本仓库，或授权全部）
