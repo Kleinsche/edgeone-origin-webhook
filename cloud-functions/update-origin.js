@@ -173,13 +173,15 @@ function describeOriginConfig(domain) {
 }
 
 async function handleDescribe(context, url) {
-  const zoneId = env(context, 'EO_ZONE_ID');
-  if (!zoneId) return fail(500, 'MissingConfig', '服务端未配置 EO_ZONE_ID');
+  // 先鉴权再校验配置，避免向未授权调用方暴露服务端状态
   // 令牌也支持放在 query 参数里，便于只能拼接 URL 的调用方
   const queryPayload = Object.fromEntries(url.searchParams.entries());
   if (!isTokenValid(context, context.request, queryPayload)) {
     return fail(401, 'Unauthorized', 'Webhook 令牌校验失败');
   }
+
+  const zoneId = env(context, 'EO_ZONE_ID');
+  if (!zoneId) return fail(500, 'MissingConfig', '服务端未配置 EO_ZONE_ID');
 
   const domainParam = url.searchParams.get('domain');
   if (!domainParam) {
