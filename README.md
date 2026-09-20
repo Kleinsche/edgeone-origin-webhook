@@ -71,7 +71,7 @@ API 版本：`2022-09-01`，服务名：`teo`，接入点：`https://teo.tencent
 | `EO_API_ENDPOINT` | 否 | 自定义接入点 |
 | `EO_API_TIMEOUT_MS` | 否 | 单次 API 调用超时，默认 `15000` |
 | `EO_API_REGION` | 否 | `X-TC-Region`，TEO 为全球服务，一般无需设置 |
-| `EO_ALLOW_GET_UPDATE` | 否 | 设为 `true` 时允许用 **GET** 触发更新，方便只能拼接 URL 的调用方（如 Lucky Callweb）。默认关闭 |
+| `EO_ALLOW_GET_UPDATE` | 否 | 设为 `true` 时允许用 **GET** 触发更新，方便只能拼接 URL 的调用方（如各类计划任务）。默认关闭 |
 | `EO_ALLOW_DESCRIBE` | 否 | 设为 `true` 时开放 GET 查询单个域名的回源配置。**默认关闭**，建议仅排障时临时开启 |
 | `EO_CORS_ORIGIN` | 否 | 允许的跨域来源，如 `https://example.com`。不设置则不返回 `Access-Control-Allow-Origin`，即不开放跨域 |
 
@@ -100,7 +100,7 @@ GET 传参同样支持：`?zoneId=zone-abcdef123456&domain=www.other-site.com&ip
 
 本地调试：复制 `.env.example` 为 `.env`。
 
-> 令牌可放在三种位置任一：`X-Webhook-Token` 头、`Authorization: Bearer <token>` 头，或请求体/query 里的 `token` 字段。Lucky 不易设置请求头时，用 `token` 字段最省事。
+> 令牌可放在三种位置任一：`X-Webhook-Token` 头、`Authorization: Bearer <token>` 头，或请求体/query 里的 `token` 字段。调用方不方便设置请求头时（如只能在计划任务里填参数的工具），用 `token` 字段最省事。
 
 ## 接口说明
 
@@ -201,13 +201,13 @@ curl -X POST https://<你的 EdgeOne 域名>/update-origin \
 
 令牌也可通过 `Authorization: Bearer <token>` 或请求体 `"token": "<token>"` 传递。
 
-## 从 Lucky 调用
+## Webhook 调用
 
-Lucky 通过**计划任务 → Callweb 子任务**发起请求，变量语法是单花括号 `{变量名}`。
+本接口就是一个普通 HTTP 接口，任何能发请求的工具都可以调用：DDNS 客户端、路由器或 NAS 的计划任务、`cron` + `curl`、CI 流水线、各类 Webhook 触发器。调用方只需填好「URL + 请求头 + 请求体」，下面以 **Lucky** 的计划任务为例，其他工具按对应关系填写即可。
 
 ### 方式一：POST + JSON 请求体（推荐）
 
-添加计划任务 → 子任务类型选 **Callweb**：
+以 Lucky 为例：添加计划任务 → 子任务类型选 **Callweb**，按下面填写：
 
 | 字段 | 填写内容 |
 | --- | --- |
@@ -216,7 +216,7 @@ Lucky 通过**计划任务 → Callweb 子任务**发起请求，变量语法是
 | 请求头 | `Content-Type: application/json` 换行 `X-Webhook-Token: your-strong-random-token` |
 | 请求体 | `{"domain":"www.example.com","ip":"{CRON_任务名称_1}","httpPort":80,"httpsPort":443}`；站点不是默认站点时，开头补一段 `"zoneId":"zone-abcdef123456",` |
 
-请求体中的 IP 用 Lucky 变量替换，可用写法：
+上面请求体里的 `{CRON_任务名称_1}` 是 Lucky 的变量写法（单花括号），Lucky 支持这些：
 
 | 变量 | 含义 |
 | --- | --- |
@@ -228,7 +228,7 @@ Lucky 通过**计划任务 → Callweb 子任务**发起请求，变量语法是
 
 ### 方式二：GET（只能拼 URL 时使用）
 
-若调用端不方便设置请求头或请求体，可先在项目环境变量里设置 `EO_ALLOW_GET_UPDATE=true`，然后：
+若调用端不方便自定义请求头或请求体（有些计划任务只能拼 URL），可先在项目环境变量里设置 `EO_ALLOW_GET_UPDATE=true`，然后（示例中的 `{CRON_任务名称_1}` 是 Lucky 变量，其他工具换成自己的变量或直接写 IP）：
 
 ```
 https://<你的 EdgeOne 域名>/update-origin?domain=www.example.com&ip={CRON_任务名称_1}&httpPort=80&httpsPort=443&token=your-strong-random-token
