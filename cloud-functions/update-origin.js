@@ -24,12 +24,19 @@
  *   EO_API_ENDPOINT              可选，默认 https://teo.tencentcloudapi.com
  *   EO_API_TIMEOUT_MS            可选，接口超时，默认 15000
  *   EO_ALLOW_GET_UPDATE          可选，true 时允许用 GET 触发更新（便于 Lucky 等只能拼 URL 的调用方）
+ *   EO_ALLOW_DESCRIBE            可选，true 时开放 GET 查询单个域名的回源配置（默认关闭）
+ *   EO_CORS_ORIGIN               可选，允许的跨域来源；不设置时不返回 Access-Control-Allow-Origin
  */
 
 import { TeoClient, TeoApiError } from './lib/teo-client.js';
 
+// 默认不开放跨域，避免任意第三方页面在浏览器上下文中读取响应内容。
+// 确有网页需要跨域调用时，通过 EO_CORS_ORIGIN 指定具体来源，如 https://bby3.cn。
+const corsAllowOrigin =
+  (typeof process !== 'undefined' && process.env?.EO_CORS_ORIGIN) || '';
+
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+  ...(corsAllowOrigin ? { 'Access-Control-Allow-Origin': corsAllowOrigin } : {}),
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, X-Webhook-Token, Authorization',
 };
@@ -173,6 +180,14 @@ function describeOriginConfig(domain) {
 }
 
 async function handleDescribe(context, url) {
+  // 默认关闭查询能力，避免向外界暴露站点拓扑与回源地址。
+  // 仅在排障时把 EO_ALLOW_DESCRIBE 临时设为 true 开启。
+  // 返回 404 而非 401/405，避免向外部暴露该路径具备特殊能力。
+  const describeEnabled = String(env(context, 'EO_ALLOW_DESCRIBE')).toLowerCase() === 'true';
+  if (!describeEnabled) {
+    return fail(404, 'NotFound', 'Not Found');
+  }
+
   // 先鉴权再校验配置，避免向未授权调用方暴露服务端状态
   // 令牌也支持放在 query 参数里，便于只能拼接 URL 的调用方
   const queryPayload = Object.fromEntries(url.searchParams.entries());
@@ -183,27 +198,10 @@ async function handleDescribe(context, url) {
   const zoneId = env(context, 'EO_ZONE_ID');
   if (!zoneId) return fail(500, 'MissingConfig', '服务端未配置 EO_ZONE_ID');
 
+  // 只支持按域名精确查询，不再返回全站点域名清单（否则一次请求即泄露全部域名与源站）
   const domainParam = url.searchParams.get('domain');
   if (!domainParam) {
-    try {
-      const client = buildClient(context);
-      const result = await client.listAccelerationDomains(zoneId, {
-        limit: Math.min(Number(url.searchParams.get('limit')) || 200, 200),
-        offset: Number(url.searchParams.get('offset')) || 0,
-      });
-      return json({
-        ok: true,
-        zoneId,
-        total: result.total,
-        domains: result.domains.map((item) => ({
-          domain: item.DomainName,
-          ...describeOriginConfig(item),
-        })),
-        requestId: result.requestId,
-      });
-    } catch (err) {
-      return handleError(err, '查询加速域名列表失败');
-    }
+    return fail(400, 'InvalidParameter', '缺少必填参数 domain，不支持返回全站点域名列表');
   }
 
   let domain;
@@ -219,7 +217,8 @@ async function handleDescribe(context, url) {
     if (!found) {
       return fail(404, 'DomainNotFound', `站点 ${zoneId} 下不存在加速域名 ${domain}`);
     }
-    return json({ ok: true, zoneId, domain: found.DomainName, origin: describeOriginConfig(found) });
+    // 响应体不再返回 zoneId，减少站点标识信息泄露
+    return json({ ok: true, domain: found.DomainName, origin: describeOriginConfig(found) });
   } catch (err) {
     return handleError(err, '查询加速域名失败');
   }

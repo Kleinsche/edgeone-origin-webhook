@@ -48,6 +48,8 @@ API 版本：`2022-09-01`，服务名：`teo`，接入点：`https://teo.tencent
 | `EO_API_TIMEOUT_MS` | 否 | 单次 API 调用超时，默认 `15000` |
 | `EO_API_REGION` | 否 | `X-TC-Region`，TEO 为全球服务，一般无需设置 |
 | `EO_ALLOW_GET_UPDATE` | 否 | 设为 `true` 时允许用 **GET** 触发更新，方便只能拼接 URL 的调用方（如 Lucky Callweb）。默认关闭 |
+| `EO_ALLOW_DESCRIBE` | 否 | 设为 `true` 时开放 GET 查询单个域名的回源配置。**默认关闭**，建议仅排障时临时开启 |
+| `EO_CORS_ORIGIN` | 否 | 允许的跨域来源，如 `https://example.com`。不设置则不返回 `Access-Control-Allow-Origin`，即不开放跨域 |
 
 本地调试：复制 `.env.example` 为 `.env`。
 
@@ -115,13 +117,18 @@ X-Webhook-Token: <WEBHOOK_TOKEN>
 
 > `after` 为下发后立即回读的结果，若 EdgeOne 配置尚未下发完成，可能仍是旧值，以 `requestId` 为准。
 
-### 2. 查询当前回源配置
+### 2. 查询当前回源配置（默认关闭）
+
+出于安全考虑，查询能力默认关闭，直接 `GET /update-origin` 会返回 `404 Not Found`。
+仅在排障时给环境变量临时设置 `EO_ALLOW_DESCRIBE=true`，用完改回 `false`。
 
 ```http
-GET /update-origin?domain=www.example.com
-GET /update-origin              # 列出站点下所有域名及其源站配置
-GET /update-origin?limit=50&offset=0
+GET /update-origin?domain=www.example.com&token=<WEBHOOK_TOKEN>
 ```
+
+一次请求只返回指定域名的回源配置，不再返回全站点域名清单，响应中也不含 `zoneId`，避免源站拓扑外泄。
+
+> **务必先配置 `WEBHOOK_TOKEN`**：若令牌与上述查询开关都被意外放开，任何人打开该 URL 都能读到站点下全部域名及其源站 IP、回源协议与端口。
 
 ## 调用示例
 
@@ -167,7 +174,7 @@ Lucky 通过**计划任务 → Callweb 子任务**发起请求，变量语法是
 https://<你的 EdgeOne 域名>/update-origin?domain=www.example.com&ip={CRON_任务名称_1}&httpPort=80&httpsPort=443&token=your-strong-random-token
 ```
 
-规则：`GET /update-origin?domain=...&ip=...` 触发更新；不带 `ip` 时保持查询行为。令牌放在 query 的 `token` 参数中同样有效。
+规则：`GET /update-origin?domain=...&ip=...` 触发更新；不带 `ip` 时默认返回 `404`（查询能力需 `EO_ALLOW_DESCRIBE=true` 才会开放）。令牌放在 query 的 `token` 参数中同样有效。
 
 > 注意 GET 请求可能被 CDN 或浏览器缓存，且 URL 会带明文令牌，建议仅在可信的内网/服务端调用场景使用。
 
@@ -189,7 +196,7 @@ edgeone deploy
 
 ### 必要的一步：配置环境变量
 
-命令行部署不会上传 `.env`。请在 **EdgeOne Makers 控制台 → 项目 → 环境变量** 中添加：
+命令行部署不会上传 `.env`。请在 **EdgeOne Makers 控制台 → 项目 → 项目设置 → 环境管理** 中添加（生产环境与预览环境的变量相互独立）：
 
 ```
 EO_SECRET_ID     = 你的 SecretId
@@ -199,11 +206,16 @@ WEBHOOK_TOKEN    = 高强度随机串（建议设置）
 EO_ALLOWED_DOMAINS = *.example.com
 ```
 
-配置完成后用下面的命令验证是否已经生效（返回 `true`）：
+配置完成后用下面的命令验证是否已经生效（返回 `ok: true`）：
 
 ```bash
-curl "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin?domain=www.example.com"
+curl -X POST "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin" \
+  -H "X-Webhook-Token: <WEBHOOK_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"domain":"www.example.com","ip":"127.0.0.1","dryRun":true}'
 ```
+
+`dryRun` 只返回变更预览，不会真正下发。若想用 GET 排障，需额外设置 `EO_ALLOW_DESCRIBE=true`。
 
 若仍返回 `{"ok":false,"error":{"code":"MissingConfig","message":"服务端未配置 EO_ZONE_ID"}`，说明环境变量未保存或未触发重新部署，需要在控制台手动"重新部署"一次。
 
@@ -285,5 +297,5 @@ curl "https://tencent-teo-sync-y4evv21v.edgeone.cool/update-origin?domain=www.ex
 
 1. `HttpOriginPort` 仅在回源协议为 `FOLLOW` / `HTTP` 时生效，`HttpsOriginPort` 仅在 `HTTPS` 时生效，脚本会在 `notes` 中给出提示。
 2. 修改 `OriginInfo` 会覆盖原主源站；多源站请用逗号分隔一次传入全部地址。
-3. 若域名当前源站类型是 `COS`、`ORIGIN_GROUP` 等对象存储/源站组，脚本会沿用其 `OriginType` 直接改写地址，请先用 `GET /update-origin?domain=xxx` 确认再操作。
+3. 若域名当前源站类型是 `COS`、`ORIGIN_GROUP` 等对象存储/源站组，脚本会沿用其 `OriginType` 直接改写地址，可先临时设置 `EO_ALLOW_DESCRIBE=true` 后用 `GET /update-origin?domain=xxx&token=<令牌>` 确认再操作，或直接用 `dryRun` 预览变更。
 4. API 请求签名依赖机器时间，需保证云函数运行环境时间准确（TEO 要求时间戳偏差不超过 5 分钟）。
