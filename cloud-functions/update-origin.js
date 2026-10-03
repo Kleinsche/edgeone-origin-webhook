@@ -6,7 +6,7 @@
  * 请求体（application/json）：
  * {
  *   "zoneId":    "zone-225qgrnvbi9w",  // 可选：站点 ID，缺省使用环境变量 EO_ZONE_ID
- *   "domain":    "www.example.com",   // 必填，EdgeOne 上已接入的加速域名
+ *   "domain":    "www.example.com",   // 必填，EdgeOne 上已接入的加速域名，支持泛域名如 *.example.com
  *   "ip":        "1.2.3.4",           // 必填，回源 IP（多个用逗号分隔或传数组）
  *   "httpPort":  80,                  // HTTP 回源端口，缺省 80
  *   "httpsPort": 443,                 // HTTPS 回源端口，缺省 443
@@ -71,7 +71,11 @@ function envFirst(context, ...keys) {
 const IPV4_RE = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
 // 形似 IPv4（四段纯数字）但不合法，如 999.1.1.1，必须拒绝而不是当作域名放行
 const IPV4_LIKE_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
-const DOMAIN_RE = /^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+// 单个标签（label）规则：字母/数字开头结尾，中间可含连字符，最长 63
+const LABEL_PATTERN = '[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?';
+const DOMAIN_RE = new RegExp(`^(?=.{1,253}$)${LABEL_PATTERN}(\\.${LABEL_PATTERN})+$`);
+// 泛域名：仅允许 *. 开头的通配子域（如 *.example.com），EdgeOne 支持泛域名接入
+const WILDCARD_DOMAIN_RE = new RegExp(`^\\*\\.${LABEL_PATTERN}(\\.${LABEL_PATTERN})+$`);
 // 仅做基础格式判断，完整 IPv6 交由 EdgeOne 后端校验
 const IPV6_RE = /^[0-9a-fA-F:]{2,45}$/;
 /** 允许的回源协议取值；仅在调用方显式传入时用于覆盖域名现有配置 */
@@ -111,8 +115,10 @@ function pick(payload, keys) {
 
 function normalizeDomain(raw) {
   const value = String(raw).trim().toLowerCase().replace(/\.$/, '');
-  if (!DOMAIN_RE.test(value)) {
-    throw new ValidationError(`域名格式无效：${raw}`);
+  if (!DOMAIN_RE.test(value) && !WILDCARD_DOMAIN_RE.test(value)) {
+    throw new ValidationError(
+      `域名格式无效：${raw}（需为 example.com 或泛域名 *.example.com）`,
+    );
   }
   return value;
 }
@@ -135,8 +141,11 @@ function isDomainAllowed(context, domain) {
   if (!whitelist) return true;
   const rules = whitelist.split(',').map((item) => item.trim().toLowerCase()).filter(Boolean);
   if (rules.length === 0) return true;
+  // 泛域名自身也算其父域名的子域，如 *.a.example.com 可被 *.example.com / example.com 放行
+  const wildcardParent = domain.startsWith('*.') ? domain.slice(2) : null;
   return rules.some((rule) => {
     if (rule === domain) return true;
+    if (wildcardParent && rule === wildcardParent) return true;
     if (rule.startsWith('*.')) {
       const parent = rule.slice(2);
       return domain === parent || domain.endsWith(`.${parent}`);
